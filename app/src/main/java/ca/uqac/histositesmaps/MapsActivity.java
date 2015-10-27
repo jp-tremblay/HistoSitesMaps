@@ -11,8 +11,10 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.location.Geocoder;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.view.KeyEvent;
@@ -43,6 +45,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         gps = new GPSTracker(this);
         if (!gps.canGetLocation())
             gps.showSettingsAlert();
+
         api = new RestApi(this);
         api.setInteractor(this);
 
@@ -52,6 +55,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        ((Button) findViewById(R.id.button_reset)).setOnClickListener(getClickListener());
     }
 
 
@@ -142,6 +146,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
 
     private void setLocationWithPos(LatLng newPos, String title) {
+        reset();
+
         mMap.addMarker(new com.google.android.gms.maps.model.MarkerOptions().position(newPos).title(title));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newPos, DEFAULT_ZOOM));
         ((EditText) findViewById(R.id.editText)).setText("");
@@ -153,6 +159,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+
+    private void reset(){
+        api.reset();
+        mMap.clear();
+    }
     /**
      * Défini le listener sur le edittext afin que celui-ci modifie l'emplacement sur la carte après
      * entrée d'un nouvel emplacement
@@ -203,6 +214,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         else
             Toast.makeText(MapsActivity.this, "Error while getting new Places : "+obj.getStatus(), Toast.LENGTH_LONG).show();
+    }
+
+    private View.OnClickListener getClickListener(){
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setLocationWithPos(gps.getLatLng(), "Votre position");
+            }
+        };
     }
 }
 

@@ -74,11 +74,19 @@ public class RestApi {
         // Demandé par Google
 
         try {
-            Thread.sleep(1500);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         queue.add(stringRequest);
+    }
+
+    public void reset(){
+        queue.cancelAll(new RequestQueue.RequestFilter() {
+            public boolean apply(Request<?> request) {
+                return true;
+            }
+        });
     }
 }
 
