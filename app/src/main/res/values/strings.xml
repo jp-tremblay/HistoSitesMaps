@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">HistoSitesMaps</string>
     <string name="title_activity_maps">Map</string>
+    <string name="form_1">Remplir "Adresse" OU "LatLng"</string>
+    <string name="form_2">Adresse</string>
+    <string name="form_3">Latitude</string>
+    <string name="form_4">Longitude</string>
+    <string name="form_5">Nom de la place</string>
+    <string name="form_6">Ajouter la place</string>
 </resources>

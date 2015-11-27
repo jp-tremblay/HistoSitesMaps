@@ -1,4 +1,4 @@
-package ca.uqac.histositesmaps;
+package ca.uqac.histositesmaps.restapi;
 
 import android.util.Log;
 import android.widget.Toast;

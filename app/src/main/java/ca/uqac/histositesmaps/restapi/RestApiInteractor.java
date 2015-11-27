@@ -1,6 +1,4 @@
-package ca.uqac.histositesmaps;
-
-import org.json.JSONObject;
+package ca.uqac.histositesmaps.restapi;
 
 /**
  * Created by utilisateur on 27/10/2015.

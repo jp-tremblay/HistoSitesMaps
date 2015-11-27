@@ -10,6 +10,15 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_gravity="left"
+            android:background="@drawable/add_icon"
+            android:layout_weight="1"
+            android:id="@+id/button_add"
+            />
+
         <EditText
             android:layout_width="0dp"
             android:layout_height="wrap_content"

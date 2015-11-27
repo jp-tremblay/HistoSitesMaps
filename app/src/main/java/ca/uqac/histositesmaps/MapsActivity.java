@@ -1,5 +1,6 @@
 package ca.uqac.histositesmaps;
 
+import android.content.Intent;
 import android.location.Address;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.location.Geocoder;
@@ -24,15 +26,27 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
+
+import ca.uqac.histositesmaps.marker.CustomMarker;
+import ca.uqac.histositesmaps.marker.FormActivity;
+import ca.uqac.histositesmaps.marker.MarkerManagement;
+import ca.uqac.histositesmaps.restapi.JSONApiParser;
+import ca.uqac.histositesmaps.restapi.RestApiInteractor;
+import ca.uqac.histositesmaps.restapi.RestApiPlaces;
+
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, RestApiInteractor {
 
     private GoogleMap mMap;
     private Geocoder gc;
 
-    private GPSTracker  gps;
-    private RestApi     api;
+    private GPSTracker      gps;
+    private RestApiPlaces   api;
+
+    private Intent intent;
+    private MarkerManagement marker;
 
     private final float DEFAULT_ZOOM = 15.0f;   // Zoom par défaut sur la carte
     private final int   RADIUS = 10000;         // En mètres (maximum 50 km = 50 000 )
@@ -46,7 +60,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (!gps.canGetLocation())
             gps.showSettingsAlert();
 
-        api = new RestApi(this);
+        api = new RestApiPlaces(this);
         api.setInteractor(this);
 
         gc = new Geocoder(this);
@@ -55,7 +69,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        ((Button) findViewById(R.id.button_reset)).setOnClickListener(getClickListener());
+        ((Button) findViewById(R.id.button_reset)).setOnClickListener(getClickListener(0));
+        ((Button) findViewById(R.id.button_add)).setOnClickListener(getClickListener(1));
+
+        intent = new Intent(this, FormActivity.class);
     }
 
 
@@ -106,6 +123,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         // Init edittext composant
         setInputText();
+
+        String content = MarkerManagement.getContent(this);
+        String[] allTab = content.split("\n");
+        if(allTab.length > 0)
+            for(String s:allTab){
+                String[] tab = s.split(";");
+                String name = tab[0];
+                String address = tab[1];
+                String[] latlng = tab[2].split(",");
+                LatLng ll = new LatLng(
+                    Double.parseDouble(latlng[0]),
+                    Double.parseDouble(latlng[1])
+                );
+                CustomMarker marker = new CustomMarker(name,ll,address);
+                mMap.addMarker(
+                    new MarkerOptions()
+                            .position(ll)
+                            .title(name)
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW))
+                );
+            }
     }
 
     /**
@@ -216,13 +254,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Toast.makeText(MapsActivity.this, "Error while getting new Places : "+obj.getStatus(), Toast.LENGTH_LONG).show();
     }
 
-    private View.OnClickListener getClickListener(){
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                setLocationWithPos(gps.getLatLng(), "Votre position");
-            }
-        };
+    private View.OnClickListener getClickListener(int i){
+        switch(i){
+            case 0:
+                return new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        setLocationWithPos(gps.getLatLng(), "Votre position");
+                    }
+                };
+            case 1:
+                return new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        startActivity(intent);
+                    }
+                };
+        }
+        return null;
     }
 }
 
