@@ -1,7 +1,10 @@
 package ca.uqac.histositesmaps.marker;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,7 +17,7 @@ import ca.uqac.histositesmaps.R;
 import ca.uqac.histositesmaps.marker.CustomMarker;
 import ca.uqac.histositesmaps.restapi.RestApiTranslator;
 
-public class FormActivity extends AppCompatActivity implements View.OnClickListener {
+public class FormActivity extends Activity implements View.OnClickListener {
 
     private EditText address;
     private EditText latitude;
@@ -42,6 +45,7 @@ public class FormActivity extends AppCompatActivity implements View.OnClickListe
         address.setText("25 rue Lorne est G7H2L4 Chicoutimi");
         name.setText("MAISON");
         */
+
         translator = new RestApiTranslator(this);
     }
 
@@ -63,8 +67,8 @@ public class FormActivity extends AppCompatActivity implements View.OnClickListe
         createObject();
     }
     public void setLatLng(LatLng latlng){
-        this.longitude.setText(""+latlng.longitude);
-        this.latitude.setText(""+latlng.latitude);
+        this.longitude.setText("" + latlng.longitude);
+        this.latitude.setText("" + latlng.latitude);
         createObject();
     }
 
@@ -78,11 +82,21 @@ public class FormActivity extends AppCompatActivity implements View.OnClickListe
 
         CustomMarker marker = new CustomMarker(address_name,address_latlng,address_address);
 
-        MarkerManagement.add(this,marker);
+        new MarkerManagement(this).addPlace(marker);
 
-        this.address.setText("");
-        this.latitude.setText("");
-        this.longitude.setText("");
-        this.name.setText("");
+        Intent intent = new Intent();
+        intent.putExtra("name",marker.getName());
+        intent.putExtra("latitude",marker.getCoord().latitude);
+        intent.putExtra("longitude",marker.getCoord().longitude);
+        intent.putExtra("address",marker.getAddress());
+
+
+        setResult(RESULT_OK, intent);
+        finish();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.i("FROM CHILD", "test");
     }
 }

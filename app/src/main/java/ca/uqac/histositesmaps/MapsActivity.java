@@ -2,14 +2,18 @@ package ca.uqac.histositesmaps;
 
 import android.content.Intent;
 import android.location.Address;
+import android.location.Location;
+import android.os.Parcelable;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.util.Log;
@@ -37,7 +41,7 @@ import ca.uqac.histositesmaps.restapi.RestApiInteractor;
 import ca.uqac.histositesmaps.restapi.RestApiPlaces;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, RestApiInteractor {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, RestApiInteractor, GoogleMap.OnMapLongClickListener {
 
     private GoogleMap mMap;
     private Geocoder gc;
@@ -45,11 +49,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GPSTracker      gps;
     private RestApiPlaces   api;
 
-    private Intent intent;
-    private MarkerManagement marker;
+    private ArrayList<CustomMarker> alMarker;
 
-    private final float DEFAULT_ZOOM = 15.0f;   // Zoom par défaut sur la carte
-    private final int   RADIUS = 10000;         // En mètres (maximum 50 km = 50 000 )
+    private Intent intent;
+
+    private final float DEFAULT_ZOOM = 15.0f;       // Zoom par défaut sur la carte
+    private final int   RADIUS = 10000;             // En mètres (maximum 50 km = 50 000 )
+    private final float RADIUS_DETECT = 0.00001f;   // Différences maximale pour longitude/latitude
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,10 +75,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        ((Button) findViewById(R.id.button_reset)).setOnClickListener(getClickListener(0));
-        ((Button) findViewById(R.id.button_add)).setOnClickListener(getClickListener(1));
+        alMarker = new ArrayList<>();
 
         intent = new Intent(this, FormActivity.class);
+
+        ((Button) findViewById(R.id.button_reset)).setOnClickListener(getClickListener(0));
+        ((Button) findViewById(R.id.button_add)).setOnClickListener(new MenuListener(this, intent));
+
     }
 
 
@@ -88,6 +97,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.setOnMapLongClickListener(this);
 
         // Modification du code de Jean-pierre pour utiliser la classe GPSTracker
         /*
@@ -123,8 +133,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         // Init edittext composant
         setInputText();
+        loadMarkerManagement();
 
-        String content = MarkerManagement.getContent(this);
+    }
+
+    private void loadMarkerManagement(){
+        List<CustomMarker> addedMarkers = new MarkerManagement(this).getAllPlaces();
+        for(CustomMarker m:addedMarkers){
+            addMarker(m);
+        }
+        /*
         String[] allTab = content.split("\n");
         if(allTab.length > 0)
             for(String s:allTab){
@@ -133,17 +151,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 String address = tab[1];
                 String[] latlng = tab[2].split(",");
                 LatLng ll = new LatLng(
-                    Double.parseDouble(latlng[0]),
-                    Double.parseDouble(latlng[1])
+                        Double.parseDouble(latlng[0]),
+                        Double.parseDouble(latlng[1])
                 );
                 CustomMarker marker = new CustomMarker(name,ll,address);
-                mMap.addMarker(
-                    new MarkerOptions()
-                            .position(ll)
-                            .title(name)
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW))
-                );
+                addMarker(marker);
             }
+        */
     }
 
     /**
@@ -201,6 +215,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void reset(){
         api.reset();
         mMap.clear();
+        loadMarkerManagement();
     }
     /**
      * Défini le listener sur le edittext afin que celui-ci modifie l'emplacement sur la carte après
@@ -243,35 +258,72 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                mMap.addMarker(
-                        new MarkerOptions()
-                        .position(tmpPosition)
-                        .title(tmpName)
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-                );
+                CustomMarker marker = new CustomMarker(tmpName,tmpPosition,tmpPosition.toString(),true);
+                addMarker(marker);
             }
         else
             Toast.makeText(MapsActivity.this, "Error while getting new Places : "+obj.getStatus(), Toast.LENGTH_LONG).show();
     }
 
     private View.OnClickListener getClickListener(int i){
-        switch(i){
-            case 0:
-                return new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        setLocationWithPos(gps.getLatLng(), "Votre position");
-                    }
-                };
-            case 1:
-                return new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        startActivity(intent);
-                    }
-                };
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setLocationWithPos(gps.getLatLng(), "Votre position");
+            }
+        };
+    }
+
+    @Override
+    // Access to long click on positions
+    public void onMapLongClick(LatLng latLng) {
+        Log.i("CLICK INFO", latLng.toString());
+        Location clickLocation = new Location("");
+        clickLocation.setLatitude(latLng.latitude);
+        clickLocation.setLongitude(latLng.longitude);
+
+        for(CustomMarker m:alMarker){
+            Log.i(m.getName(), m.getCoord().toString());
+            LatLng diffll = new LatLng(
+                    Math.abs(Math.abs(latLng.latitude)-Math.abs(m.getCoord().latitude)),
+                    Math.abs(Math.abs(latLng.longitude)-Math.abs(m.getCoord().longitude))
+            );
+            Location tmp = new Location("");
+            tmp.setLatitude(diffll.latitude);
+            tmp.setLongitude(diffll.longitude);
+
+            float distance = tmp.distanceTo(clickLocation);
+            Log.i("DISTANCE TO " + m.getName(), " = " + distance);
         }
-        return null;
+    }
+
+    private void addMarker(CustomMarker marker){
+        BitmapDescriptor color = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+        if(marker.isFromGoogle()) color = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE);
+
+        mMap.addMarker(
+                new MarkerOptions()
+                        .position(marker.getCoord())
+                        .title(marker.getName())
+                        .icon(color)
+        );
+        alMarker.add(marker);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        double DEFAULT_VALUE = 999999;
+        String name = data.getStringExtra("name");
+        String address = data.getStringExtra("address");
+        double latitude = data.getDoubleExtra("latitude", DEFAULT_VALUE);
+        double longitude = data.getDoubleExtra("longitude",DEFAULT_VALUE);
+
+        if(latitude == DEFAULT_VALUE || longitude == DEFAULT_VALUE){
+            Toast.makeText(this,"Erreur: Un problème de transfert est survenu",Toast.LENGTH_LONG).show();
+            return;
+        }
+        CustomMarker marker = new CustomMarker(name,new LatLng(latitude,longitude),address);
+        addMarker(marker);
     }
 }
 
