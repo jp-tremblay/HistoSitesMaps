@@ -105,9 +105,32 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:id="@+id/form_adr_v4" />
+
+
         </LinearLayout>
 
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/form_7"
+                android:id="@+id/form_url_lbl" />
+
+            <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/form_url_txt" />
+
+        </LinearLayout>
+
+
     </LinearLayout>
+
 
     <Button
         android:layout_width="wrap_content"
@@ -116,5 +139,6 @@
         android:id="@+id/confirm_button"
         android:layout_below="@+id/linearLayout"
         android:layout_centerHorizontal="true" />
+
 
 </RelativeLayout>

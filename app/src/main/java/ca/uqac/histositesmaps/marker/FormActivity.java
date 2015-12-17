@@ -23,12 +23,14 @@ public class FormActivity extends Activity implements View.OnClickListener {
     private EditText latitude;
     private EditText longitude;
     private EditText name;
+    private EditText url;
 
     private RestApiTranslator translator;
 
     private String address_address = "";
     private String address_name = "";
     private LatLng address_latlng = null;
+    private String address_URL = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +42,7 @@ public class FormActivity extends Activity implements View.OnClickListener {
         latitude    = (EditText) findViewById(R.id.form_adr_v2);
         longitude   = (EditText) findViewById(R.id.form_adr_v3);
         name        = (EditText) findViewById(R.id.form_adr_v4);
+        url         = (EditText) findViewById(R.id.form_url_txt);
 
         /*
         address.setText("25 rue Lorne est G7H2L4 Chicoutimi");
@@ -60,6 +63,13 @@ public class FormActivity extends Activity implements View.OnClickListener {
             address_address = this.address.getText().toString();
             translator.getCoordinates(address_address,this);
         }
+
+        address_URL = url.getText().toString();
+    }
+
+    public void setURL(String url){
+        this.url.setText(url);
+        createObject();
     }
 
     public void setAddress(String address){
@@ -79,8 +89,9 @@ public class FormActivity extends Activity implements View.OnClickListener {
                 Double.parseDouble(this.longitude.getText().toString())
         );
         address_name = this.name.getText().toString();
+        address_URL = this.url.getText().toString();
 
-        CustomMarker marker = new CustomMarker(address_name,address_latlng,address_address);
+        CustomMarker marker = new CustomMarker(address_name,address_latlng,address_address,address_URL);
 
         new MarkerManagement(this).addPlace(marker);
 
@@ -88,7 +99,8 @@ public class FormActivity extends Activity implements View.OnClickListener {
         intent.putExtra("name",marker.getName());
         intent.putExtra("latitude",marker.getCoord().latitude);
         intent.putExtra("longitude",marker.getCoord().longitude);
-        intent.putExtra("address",marker.getAddress());
+        intent.putExtra("address", marker.getAddress());
+        intent.putExtra("url", marker.getURL());
 
 
         setResult(RESULT_OK, intent);

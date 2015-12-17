@@ -14,6 +14,7 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.util.Log;
@@ -35,13 +36,14 @@ import java.util.List;
 
 import ca.uqac.histositesmaps.marker.CustomMarker;
 import ca.uqac.histositesmaps.marker.FormActivity;
+
 import ca.uqac.histositesmaps.marker.MarkerManagement;
 import ca.uqac.histositesmaps.restapi.JSONApiParser;
 import ca.uqac.histositesmaps.restapi.RestApiInteractor;
 import ca.uqac.histositesmaps.restapi.RestApiPlaces;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, RestApiInteractor, GoogleMap.OnMapLongClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, RestApiInteractor, GoogleMap.OnMapLongClickListener, GoogleMap.OnMarkerClickListener {
 
     private GoogleMap mMap;
     private Geocoder gc;
@@ -98,6 +100,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setOnMapLongClickListener(this);
+        mMap.setOnMarkerClickListener(this);
 
         // Modification du code de Jean-pierre pour utiliser la classe GPSTracker
         /*
@@ -134,7 +137,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Init edittext composant
         setInputText();
         loadMarkerManagement();
-
     }
 
     private void loadMarkerManagement(){
@@ -144,7 +146,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         /*
         String[] allTab = content.split("\n");
-        if(allTab.length > 0)
+        if(allTab.length > 1 )
             for(String s:allTab){
                 String[] tab = s.split(";");
                 String name = tab[0];
@@ -258,7 +260,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                CustomMarker marker = new CustomMarker(tmpName,tmpPosition,tmpPosition.toString(),true);
+                CustomMarker marker = new CustomMarker(tmpName,tmpPosition,tmpPosition.toString(),"",true);
                 addMarker(marker);
             }
         else
@@ -274,7 +276,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         };
     }
 
-    @Override
+   /* @Override
     // Access to long click on positions
     public void onMapLongClick(LatLng latLng) {
         Log.i("CLICK INFO", latLng.toString());
@@ -295,6 +297,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             float distance = tmp.distanceTo(clickLocation);
             Log.i("DISTANCE TO " + m.getName(), " = " + distance);
         }
+    }*/
+
+    @Override
+    // Access to long click on positions
+    public void onMapLongClick(LatLng latLng) {
+        Log.d("IMAGELOAD", latLng.toString());
+
+        for(CustomMarker m:alMarker){
+            Log.i(m.getName(), m.getCoord().toString());
+            if (m.isAtPosition(latLng))
+            {
+                Log.d("IMAGELOAD", "Marker found");
+                //Intent intent = new Intent(MapsActivity.this,ImageViewActivity.class);
+                startActivity(intent);
+            }
+        }
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker){
+        Log.d("MARKERCLICK", marker.toString());
+
+        for(CustomMarker m:alMarker){
+            Log.i("MARKERCLICK", m.getName()+ " / " + m.getCoord().toString());
+            Log.i("MARKERCLICK", m.getName() + " / " + marker.getTitle());
+            if (m.getName().equals(marker.getTitle()))
+            {
+                Log.d("IMAGELOAD", "Marker found");
+                Intent intent = new Intent(MapsActivity.this, ImageViewActivity.class);
+                intent.putExtra("url", m.getURL());
+                intent.putExtra("address", m.getAddress());
+                startActivity(intent);
+            }
+        }
+
+        return false;
     }
 
     private void addMarker(CustomMarker marker){
@@ -312,18 +350,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        double DEFAULT_VALUE = 999999;
-        String name = data.getStringExtra("name");
-        String address = data.getStringExtra("address");
-        double latitude = data.getDoubleExtra("latitude", DEFAULT_VALUE);
-        double longitude = data.getDoubleExtra("longitude",DEFAULT_VALUE);
-
-        if(latitude == DEFAULT_VALUE || longitude == DEFAULT_VALUE){
-            Toast.makeText(this,"Erreur: Un problème de transfert est survenu",Toast.LENGTH_LONG).show();
-            return;
+        if (data != null) {
+            double DEFAULT_VALUE = 999999;
+            String name = data.getStringExtra("name");
+            String address = data.getStringExtra("address");
+            String url = data.getStringExtra("url");
+            double latitude = data.getDoubleExtra("latitude", DEFAULT_VALUE);
+            double longitude = data.getDoubleExtra("longitude", DEFAULT_VALUE);
+            if(latitude == DEFAULT_VALUE || longitude == DEFAULT_VALUE){
+                Toast.makeText(this,"Erreur: Un problème de transfert est survenu",Toast.LENGTH_LONG).show();
+                return;
+            }
+            CustomMarker marker = new CustomMarker(name,new LatLng(latitude,longitude),address,url);
+            addMarker(marker);
         }
-        CustomMarker marker = new CustomMarker(name,new LatLng(latitude,longitude),address);
-        addMarker(marker);
+
     }
 }
 

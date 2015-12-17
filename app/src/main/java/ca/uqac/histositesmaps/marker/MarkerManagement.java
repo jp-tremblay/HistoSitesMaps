@@ -19,10 +19,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import android.util.Log;
 
 import ca.uqac.histositesmaps.R;
 
@@ -33,18 +35,18 @@ public class MarkerManagement extends SQLiteOpenHelper {
 
     private static final String TABLE_PLACES = "places";
 
-    // Books Table Columns names
     private static final String KEY_ID = "id";
     private static final String KEY_NAME = "name";
     private static final String KEY_LATITUDE = "latitude";
     private static final String KEY_LONGITUDE = "longitude";
     private static final String KEY_ADDRESS = "address";
+    private static final String KEY_URL = "url";
 
-    private static final String[] COLUMNS = {KEY_ID, KEY_LATITUDE, KEY_LONGITUDE, KEY_ADDRESS};
+    private static final String[] COLUMNS = {KEY_ID, KEY_LATITUDE, KEY_LONGITUDE, KEY_URL, KEY_ADDRESS };
 
 
     private static final String DATABASE_NAME = "CustomDatabase";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     public MarkerManagement(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -57,15 +59,18 @@ public class MarkerManagement extends SQLiteOpenHelper {
                 KEY_NAME+" TEXT, " +
                 KEY_LATITUDE+" DOUBLE,"+
                 KEY_LONGITUDE+" DOUBLE, "+
+                KEY_URL+" TEXT, "+
                 KEY_ADDRESS+" TEXT )";
 
         db.execSQL(CREATE_PLACES_TABLE);
+        Log.d("CreateDB", db.toString());
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_PLACES);
+        Log.d("DropDB", db.toString());
         this.onCreate(db);
     }
 
@@ -78,6 +83,7 @@ public class MarkerManagement extends SQLiteOpenHelper {
         values.put(KEY_NAME, marker.getName());
         values.put(KEY_LATITUDE, marker.getCoord().latitude);
         values.put(KEY_LONGITUDE, marker.getCoord().longitude);
+        values.put(KEY_URL, marker.getURL());
         values.put(KEY_ADDRESS, marker.getAddress());
 
         Log.d("addPlace 2", values.toString());
@@ -137,11 +143,13 @@ public class MarkerManagement extends SQLiteOpenHelper {
                         cursor.getDouble(cursor.getColumnIndex(KEY_LATITUDE)),
                         cursor.getDouble(cursor.getColumnIndex(KEY_LONGITUDE))
                 ),
-                cursor.getString(cursor.getColumnIndex(KEY_ADDRESS))
+                cursor.getString(cursor.getColumnIndex(KEY_ADDRESS)),
+                        cursor.getString(cursor.getColumnIndex(KEY_URL))
         );
     }
     /*
     private static final String FILENAME = "marker_list.database";
+    private static boolean databaseCreated = false;
 
 
     public static void add(Context m, CustomMarker marker){
@@ -150,10 +158,34 @@ public class MarkerManagement extends SQLiteOpenHelper {
 
     public static String getContent(Context m){
         //reading text from file
+        Log.d("Entered geyContent", "FILE");
+
         String s = "";
         try {
-            FileInputStream fileIn=m.openFileInput(FILENAME);
-            InputStreamReader InputRead= new InputStreamReader(fileIn);
+//            if (!databaseCreated && !m.getFileStreamPath(m.getFilesDir() + "/" +  FILENAME).exists()){
+//                File database = new File(m.getFilesDir() + "/" +  FILENAME);
+//                Log.d("File created :" + database.getAbsolutePath(), "FILE");
+//                database.createNewFile();
+//                databaseCreated = true;
+//            }
+            FileInputStream fileIn = null;
+            try {
+                fileIn = m.openFileInput(FILENAME);
+            } catch (java.io.FileNotFoundException e){
+                File file = new File(m.getExternalFilesDir(null), FILENAME);
+                OutputStream os = null;
+                try {
+                    os = new FileOutputStream(file);
+                }catch(Exception ee){
+                    ee.printStackTrace();
+                }finally
+                {
+                    os.close();
+                    fileIn = m.openFileInput(FILENAME);
+                }
+            }
+            //fileIn = m.create new FileInputStream (new File(FILENAME));
+            InputStreamReader InputRead = new InputStreamReader(fileIn);
 
             char[] inputBuffer= new char[100];
             int charRead;

@@ -40,6 +40,21 @@
         </activity>
         <activity android:name=".marker.FormActivity" >
         </activity>
+        <activity
+            android:name=".ImageViewActivity"
+            android:label="@string/title_activity_image_view"
+            android:parentActivityName=".MapsActivity"
+            android:theme="@style/AppTheme.NoActionBar" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="ca.uqac.histositesmaps.MapsActivity" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
