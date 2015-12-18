@@ -328,7 +328,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Intent intent = new Intent(MapsActivity.this, ImageViewActivity.class);
                 intent.putExtra("url", m.getURL());
                 intent.putExtra("address", m.getAddress());
+                intent.putExtra("markertitle", marker.getTitle());
                 startActivity(intent);
+                break;
             }
         }
 
